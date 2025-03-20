@@ -1,11 +1,17 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { Schema } = mongoose;
+const userRole = require("../utils/enums/userRole");
 
 const userSchema = new Schema({
   name: {
     type: String,
     required: true,
+  },
+  role: {
+    type: String,
+    enum: Object.values(userRole),
+    default: userRole.CUSTOMER,
   },
   userName: {
     type: String,

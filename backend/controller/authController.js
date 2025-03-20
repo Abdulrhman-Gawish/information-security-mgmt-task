@@ -3,8 +3,8 @@ const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateTokenAndSetCookie");
 const signUp = async (req, res) => {
   try {
-    const { name, userName, password } = req.body;
-    if (!name || !userName || !password) {
+    const { name, role, userName, password } = req.body;
+    if (!name || !role || !userName || !password) {
       return res
         .status(400)
         .json({ success: false, message: "All failds are required" });
@@ -21,14 +21,18 @@ const signUp = async (req, res) => {
 
     const user = new User({
       name,
+      role,
       userName,
       password: hashedPassword,
     });
 
     await user.save();
-
+    const payload = {
+      userId: user._id,
+      role: user.role,
+    };
     // jwt
-    generateToken(user._id, res);
+    console.log(generateToken(payload, res));
     res.status(201).json({
       success: true,
       user: {
@@ -44,6 +48,7 @@ const signUp = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { userName, password } = req.body;
+    
     if ((!userName, !password)) {
       return res
         .status(400)
@@ -56,9 +61,13 @@ const login = async (req, res) => {
     if (!passwordIsValid) {
       res.status(400).json({ success: false, message: "Invalid credentials" });
     }
+    const payload = {
+      userId: user._id,
+      userRole: user.role,
+    };
 
     // jwt
-    generateToken(user._id, res);
+    generateToken(payload, res);
     res.status(201).json({
       success: true,
       user: {
@@ -76,8 +85,27 @@ const logout = (req, res) => {
   res.status(200).json({ success: true, message: "Cookies cleared" });
 };
 
+const checkAuth = async (req, res) => {
+  try {
+    console.log(req.userId);
+
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.log("Error in checkAtuh", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   signUp,
   login,
+  checkAuth,
   logout,
 };
